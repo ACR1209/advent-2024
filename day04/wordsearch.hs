@@ -1,9 +1,44 @@
-import Data.List (isInfixOf, transpose, tails)
+import Data.List (isInfixOf, transpose, tails, nub)
 
 readWordSearch :: IO ([String])
 readWordSearch = do
     contents <- readFile "input.txt"
     return (lines contents)
+
+generatePermutations :: [String] -> [[String]]
+generatePermutations pattern = 
+    let rotations = take 4 $ iterate rotate pattern
+        reflections = map reflect rotations
+    in nub (rotations ++ reflections)
+
+rotate :: [String] -> [String]
+rotate = reverse . transpose
+
+reflect :: [String] -> [String]
+reflect = map reverse
+
+
+matchesAt :: [String] -> [String] -> Int -> Int -> Bool
+matchesAt grid pattern startRow startCol =
+  all (\(r, row) -> 
+         all (\(c, ch) -> 
+                ch == '.' || (grid !! (startRow + r)) !! (startCol + c) == ch
+             )
+             (zip [0..] row)
+      )
+      (zip [0..] pattern)
+
+countPattern :: [String] -> [String] -> Int
+countPattern grid pattern =
+  let rows = length grid
+      cols = length (head grid)
+      patRows = length pattern
+      patCols = length (head pattern)
+      permutations = generatePermutations pattern
+  in sum [ length [() | r <- [0..rows - patRows], 
+                        c <- [0..cols - patCols], 
+                        matchesAt grid perm r c]
+         | perm <- permutations ]
 
 findWord :: String -> [String] -> [String]
 findWord s p = filter (checkIn s) (rows p ++ cols p ++ dial p ++ diar p)
@@ -37,3 +72,11 @@ main = do
 
     putStr "Number of XMAS: "
     putStrLn $ show $ numWord
+
+    putStrLn "\n\n\nDay 4: Second puzzle"
+    putStrLn "--------------------"
+    let pattern = [ "M.S", ".A.", "M.S" ]
+    let patternCount = countPattern wordSearch pattern
+
+    putStr "Number X-MAS: "
+    putStrLn $ show patternCount
