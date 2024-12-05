@@ -7,12 +7,22 @@ data Expr =
 eval :: Expr -> Int
 eval (Mul x y) = x * y
 
-readMulOperations :: IO [Expr]
-readMulOperations = do
-    contents <- readFile "input.txt"
-    let validMuls = getAllValidMulExprOfString contents
+readMemory :: IO (String)
+readMemory = do
+    readFile "input.txt"
 
-    return validMuls
+readMulOperations :: String -> [Expr]
+readMulOperations s = getAllValidMulExprOfString s
+
+removeDontStrings :: String -> String
+removeDontStrings s = removeDontStrings' s False
+    where
+        removeDontStrings' [] _ = []
+        removeDontStrings' str@(x:xs) inDont
+                | "don't()" `isPrefixOf` str = removeDontStrings' (drop 6 str) True
+                | "do()" `isPrefixOf` str = removeDontStrings' (drop 4 str) False
+                | inDont = removeDontStrings' xs True
+                | otherwise = x : removeDontStrings' xs False
 
 parseMulExpr :: String -> (String, Maybe Expr)
 parseMulExpr s
@@ -41,12 +51,26 @@ getAllValidMulExprOfString s =
         _ -> getAllValidMulExprOfString (tail s)
 
 
+evalExpressionTree :: [Expr] -> Int
+evalExpressionTree exprs = sum $ map eval exprs 
+
 main :: IO()
 main = do
     putStrLn "Day 3: First puzzle"
     putStrLn "-------------------"
 
-    mulOps <- readMulOperations
+    memoryData <- readMemory
+
+    let mulOps = readMulOperations memoryData
 
     putStr "Result of operations: "
-    putStrLn $ show $ sum $ map eval mulOps
+    putStrLn $ show $ evalExpressionTree mulOps
+
+    putStrLn "\n\n\nDay 3: Second puzzle"
+    putStrLn "--------------------"
+
+
+    let mulOpsWithDos = readMulOperations $ removeDontStrings memoryData
+
+    putStr "Result of operations: "
+    putStrLn $ show $ evalExpressionTree mulOpsWithDos
